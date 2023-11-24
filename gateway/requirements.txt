@@ -3,3 +3,5 @@ uvicorn[standard]
 sqlalchemy
 websockets
 psycopg2
+pydantic
+pyjwt
