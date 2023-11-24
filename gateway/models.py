@@ -10,7 +10,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(100))
-    password_hash = Column(String(50))
+    password_hash = Column(String(64))
 
 
 class Room(Base):
