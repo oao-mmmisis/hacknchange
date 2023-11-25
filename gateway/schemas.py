@@ -9,3 +9,6 @@ class SpaceDto(BaseModel):
     name: str
     private: bool
     description: str
+
+class SpaceIdDto(BaseModel):
+    id: int

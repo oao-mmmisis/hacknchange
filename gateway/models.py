@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, CheckConstraint
 
 from database import engine
 from sqlalchemy.orm import declarative_base, relationship, backref
@@ -9,7 +9,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(32))
+    username = Column(String(32), unique=True)
     password_hash = Column(String(64))
 
 
@@ -27,11 +27,8 @@ class Permission(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    # user = relationship(User, cascade="all,delete")
-    user_role = Column(String(50))
     space_id = Column(Integer, ForeignKey("spaces.id"))
-    # space = relationship(Space, cascade="all,delete")
-
+    user_role = Column(String(5), nullable=False)
 
 
 Base.metadata.drop_all(bind=engine)
