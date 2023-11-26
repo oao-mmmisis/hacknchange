@@ -3,6 +3,8 @@ import "package:just_audio/just_audio.dart";
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+const String host = "http://localhost";
+
 void main() {
   runApp(const MyApp());
 }
@@ -44,7 +46,7 @@ class MyApp extends StatelessWidget {
 }
 
 Future<void> addSpace() async {
-  final url = Uri.parse('http://localhost/space/add');
+  final url = Uri.parse('$host/space/add');
   final headers = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
@@ -72,7 +74,7 @@ Future<void> addSpace() async {
 }
 
 Future<ListView> getSpaces() async {
-  final url = Uri.parse('http://localhost/spaces');
+  final url = Uri.parse('$host/spaces');
   final headers = {
     'accept': 'application/json',
     'Content-Type': 'application/json',
@@ -109,16 +111,16 @@ Future<ListView> getSpaces() async {
 }
 
 void playAudio(int spaceId) async {
-  // wait until the request is done
   await playRequest(spaceId, "dante");
+  await Future.delayed(const Duration(seconds: 3));
   
   final player = AudioPlayer();
-  await player.setUrl('http://localhost/audio/$spaceId');
+  await player.setUrl('$host/audio/$spaceId');
   player.play();
 }
 
 Future<void> playRequest(int spaceId, String song) async {
-  final url = Uri.parse('http://localhost/play');
+  final url = Uri.parse('$host/play');
   final headers = {
     'accept': 'application/json',
     'Content-Type': 'application/json',

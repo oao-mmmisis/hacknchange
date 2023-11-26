@@ -1,64 +1,18 @@
-import os
 import subprocess
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Header
-from fastapi.responses import HTMLResponse
-
-from database import get_db
-from models import User, Space, Permission, PlayRequest
-from schemas import UserDto, SpaceDto, SpaceIdDto
-from sqlalchemy.orm import Session
-from sqlalchemy import select, insert, update, delete
-
-import json
+from hashlib import sha256
 from typing import Annotated
 
-from hashlib import sha256
-import jwt
+from fastapi import FastAPI, Depends, Header
+from sqlalchemy import select, insert, update, delete
+from sqlalchemy.orm import Session
 
-private_key = '''-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDKmLsOBl1vxsCP
-GY44rqSmduIkfEnIap8//r8dkGv3qXnPMxuGGJK7dByRKhEQ41K38nnVwgqFUs55
-H8zm7OnO+GzIEf1W4qjdVL22J8g5IU2QPXlmKktpap6/01B9PBXAQKMU4fMtbCVH
-SDRit/226zsDY80oBS5TyVBfgmHD1ryTxlNUtq5CuRp61M9VZ5c1klG3BiXSR/Hb
-KER5CM6ob9ZQWA2nd2SNNe5h4bBPvYLTppcocsLDVWzkYBRlow8DL+yvU57C38ia
-GGlkokS0nICwu+2no30x/bovw4gEiPIFClGCOK6wEa6kLTr9nwn20A4Ds2ZdesW5
-ZhIcoEA5AgMBAAECggEAF3PPr4NwHIja8JXKP2iEGdsIOaYDmoYxMiTIteDqhqxh
-M+mcJY1Bqx55UhqXCCfwgue4T9TbB+z6hs32F8NUG4fpe82NUJoDZz+wiF4ZkPd4
-dZqQK5H40dasUtNg7WZftDYnSrsPPfJXbGWA3u6imaKoXa+XZ6sV3lAfFDdRHuzP
-eCTwDms33DSnhe3QYnm2/x2foxJdrGs3JnrAoMD0mE+iJoxhay3NCR8F/bJJlhPW
-mUZm+XsvOOw4S7fP9HkPPXtjehYE0gKyenA0OEVRqH6ckTJW0oB79eCokCqcnP0R
-XS2m+ZbfYpRC1K0zQd7Ye8MD3FqLvn+tgK/Uv0HKowKBgQDtxW8xDeEI5ErQ1tms
-IblReOh4DH/OjDz/mS1Kiz11Z5afUS+OnCCHNxIAzl6AWT90S8ytQGNDdMpRZnCQ
-Lau+u80IihTQeXDhbqtPANkXluqMo8y2f/0KLKvu6nAiiEIcmz7xBjJ459bA71Zp
-qfVA1o1anVCxc9hCO0k5+2usBwKBgQDaIPL9yYiDqTlnIU/xXm5lSyCSDe9YLNKf
-//JERFy06QnbusH7juZ9RP8PCwIJ+LSH3u2PrbYnHOQMsn0M7GVC/8bgYkWTHZCy
-ugXXNL7EwGrNO/5qow8f+yiT2hkLGS5Ofu9CNTNPXKHM9bYSOzZNHNXnzx0bJ+mL
-hz7+3XIhvwKBgQDpPWN1m0fEkS1S729Xiz1ezlw8ZwZ4dtjfYkMrfKstIBCA+ALO
-whimiz79y3KoNOQqELEWwrKc2VQdxX9l72cqEs9uMQV5+6bffNBPD2Xl3gT3MTb/
-T03JTUjbdN3LAh7YMPHtPUcFk2b2m9EIldAfalf/K5KcgCcD0WRjnF5iwQKBgCbg
-0o6beiKFaf7QuC/8Nc8GGfMOWserjYsJEoRKbv+rvZ8VZXfR25EeWBu1SZK/amYB
-PPRr8Nh91MPSmGlSRSYw8qCRw3baQS0p7NqTwyDMbvzPoaQeFhcMLApWSDprLY6+
-HyT82H1ftFMUxHPxa9dIuXOMvdJWRdEhtP+2Np5/AoGAeeNwdq4WiI0IP2PFpXEA
-XfGoThr+/X7B9gM5SohtLSiixqmL4S2NM5UjWntCDno9yMZNrstcxsAp9xDISpzd
-+GSmuKRMoZCoNnS9rEbvfGM2NofMsM1kBYq9JRljdyOBLHvVfM8itLWcGE2NYma4
-Pq8p5y7mnO+rP4gj2zZzBf8=
------END PRIVATE KEY-----
-'''
-public_key = '''-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAypi7DgZdb8bAjxmOOK6k
-pnbiJHxJyGqfP/6/HZBr96l5zzMbhhiSu3QckSoREONSt/J51cIKhVLOeR/M5uzp
-zvhsyBH9VuKo3VS9tifIOSFNkD15ZipLaWqev9NQfTwVwECjFOHzLWwlR0g0Yrf9
-tus7A2PNKAUuU8lQX4Jhw9a8k8ZTVLauQrkaetTPVWeXNZJRtwYl0kfx2yhEeQjO
-qG/WUFgNp3dkjTXuYeGwT72C06aXKHLCw1Vs5GAUZaMPAy/sr1Oewt/ImhhpZKJE
-tJyAsLvtp6N9Mf26L8OIBIjyBQpRgjiusBGupC06/Z8J9tAOA7NmXXrFuWYSHKBA
-OQIDAQAB
------END PUBLIC KEY-----
-'''
+from database import get_db
+from models import User, Space, Permission
+from schemas import UserDto, SpaceDto, SpaceIdDto, PlayRequestDto
 
-
-def decode_jwt(token):
-    return jwt.decode(token, private_key, algorithms=["RS256"])
+#
+# def decode_jwt(token):
+#     return jwt.decode(token, private_key, algorithms=["RS256"])
 
 
 secret = []
@@ -97,17 +51,17 @@ async def get_all_users(session: Session = Depends(get_db)):
     return {'data': [i for i in data]}
 
 
-@app.put('/space/add')
+@app.post('/space/add')
 async def add_space(space: SpaceDto, token: Annotated[list[str] | None, Header()] = None,
                     session: Session = Depends(get_db)):
-    decode_token = decode_jwt(token)
-    print(decode_token)
+    # decode_token = decode_jwt(token)
+    # print(decode_token)
     query = insert(Space).values(name=space.name, private=space.private, description=space.description)
     session.execute(query)
     session.commit()
 
 
-@app.put('/space/reconfigure')
+@app.post('/space/reconfigure')
 async def update_space(space: SpaceDto, token: Annotated[list[str] | None, Header()] = None,
                        session: Session = Depends(get_db)):
     query = update(Space).where(Space.id == space.id).values(name=space.name, private=space.private,
@@ -116,7 +70,7 @@ async def update_space(space: SpaceDto, token: Annotated[list[str] | None, Heade
     session.commit()
 
 
-@app.put('/space/invite')
+@app.post('/space/invite')
 async def space_invite(username: str, space_id: int, token: Annotated[list[str] | None, Header()] = None,
                        session: Session = Depends(get_db)):
     user_id = session.execute(select(User.id).where(User.username == username)).scalar()
@@ -125,13 +79,13 @@ async def space_invite(username: str, space_id: int, token: Annotated[list[str] 
     session.commit()
 
 
-@app.put('/space/connect')
+@app.post('/space/connect')
 async def space_connect(user_id: int, token: Annotated[list[str] | None, Header()] = None,
                         session: Session = Depends(get_db)):
     pass
 
 
-@app.delete('/space/delete')
+@app.post('/space/delete')
 async def delete_space(space_id: int, token: Annotated[list[str] | None, Header()] = None,
                        session: Session = Depends(get_db)):
     query = delete(Space).where(Space.id == space_id)
@@ -139,7 +93,7 @@ async def delete_space(space_id: int, token: Annotated[list[str] | None, Header(
     session.commit()
 
 
-@app.delete('/space/leave')
+@app.post('/space/leave')
 async def leave_space(space: SpaceIdDto, username: str, token: Annotated[list[str] | None, Header()] = None,
                       session: Session = Depends(get_db)):
     query = select(User.id).where(User.username == username)
@@ -182,12 +136,13 @@ async def add_user(user: UserDto, session: Session = Depends(get_db)):
             select(Permission).where(Permission.space_id == item.id).where(Permission.user_id == user_id)).scalar()
         token['spaces'].append({'id': item.id, 'role': result.user_role})
 
-    json_list['token'] = jwt.encode(token, private_key, algorithm="RS256")
+    # json_list['token'] = jwt.encode(token, private_key, algorithm="RS256")
+    json_list['token'] = "mock"
 
     return json_list
 
 
 @app.post("/play")
-async def play(play_request: PlayRequest, session: Session = Depends(get_db)):
-    process = subprocess.Popen([f"liquidsoap 'settings.init.allow_root.set(true)\noutput.icecast(%vorbis, host=\"icecast2\", port=8000, password=\"chael7Ai\", mount=\"{play_request.space_id}\", single(\"{play_request.song}\"))'"],
+async def play(play_request: PlayRequestDto, session: Session = Depends(get_db)):
+    process = subprocess.Popen([f"liquidsoap 'settings.init.allow_root.set(true)\noutput.icecast(%vorbis, host=\"icecast2\", port=8000, password=\"chael7Ai\", mount=\"/audio/{play_request.space_id}\", single(\"/music/{play_request.song}.ogg\"))'"],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)

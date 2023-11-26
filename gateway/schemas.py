@@ -1,4 +1,5 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
+
 
 class UserDto(BaseModel):
     username: str
@@ -12,3 +13,8 @@ class SpaceDto(BaseModel):
 
 class SpaceIdDto(BaseModel):
     id: int
+    
+
+class PlayRequestDto(BaseModel):
+    space_id: int
+    song: str
