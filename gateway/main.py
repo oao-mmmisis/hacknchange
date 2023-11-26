@@ -191,4 +191,3 @@ async def add_user(user: UserDto, session: Session = Depends(get_db)):
 async def play(play_request: PlayRequest, session: Session = Depends(get_db)):
     process = subprocess.Popen([f"liquidsoap 'settings.init.allow_root.set(true)\noutput.icecast(%vorbis, host=\"icecast2\", port=8000, password=\"chael7Ai\", mount=\"{play_request.space_id}\", single(\"{play_request.song}\"))'"],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    return play_request
