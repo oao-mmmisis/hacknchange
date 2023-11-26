@@ -11,6 +11,17 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
 
+  app:
+    build: .
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_started
+    expose:
+      - 8080
+    networks:
+      - default
+
   postgres:
     image: postgres
     restart: on-failure
@@ -18,13 +29,5 @@ services:
       POSTGRES_DB: test_db        
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
-    networks:
-      - default
-
-  app:
-    build: .
-    restart: on-failure
-    expose:
-      - 8000
     networks:
       - default

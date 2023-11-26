@@ -2,8 +2,10 @@ from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, CheckConstr
 
 from database import engine
 from sqlalchemy.orm import declarative_base, relationship, backref
+from pydantic import BaseModel
 
 Base = declarative_base()
+
 
 class User(Base):
     __tablename__ = "users"
@@ -29,6 +31,11 @@ class Permission(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     space_id = Column(Integer, ForeignKey("spaces.id"))
     user_role = Column(String(5), nullable=False)
+
+
+class PlayRequest(BaseModel):
+    space_id: int
+    song: str
 
 
 Base.metadata.drop_all(bind=engine)

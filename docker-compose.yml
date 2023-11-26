@@ -1,0 +1,59 @@
+version: "3"
+
+services:
+  app:
+    build: ./gateway/.
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_started
+      icecast2:
+        condition: service_started
+    expose:
+      - 9090
+    networks:
+      - default
+    volumes:
+      - ./audio/script.liq:/etc/liquidsoap/script.liq
+      - ./audio/music:/music
+
+  icecast2:
+    image: pltnk/icecast2
+    restart: always
+    networks:
+      - default
+      - public
+    ports:
+      - 8000:8000
+    volumes:
+      - ./audio/icecast.xml:/etc/icecast2/icecast.xml
+
+  nginx:
+    image: nginx:latest
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - default
+      - public
+
+
+  postgres:
+    image: postgres
+    restart: on-failure
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    networks:
+      - default
+
+networks:
+    default:
+      internal: true
+    public:
+      internal: false
