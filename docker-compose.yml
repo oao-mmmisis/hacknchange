@@ -36,6 +36,7 @@ services:
       - "80:80"
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt/web:/opt/web
     networks:
       - default
       - public
