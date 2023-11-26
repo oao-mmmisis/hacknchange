@@ -9,7 +9,7 @@
 [Ссылка](http://hackathon.rflx.xyz/docs)
 
 ## Демонстрация работы проекта
-[Видео]()
+[Видео](https://drive.google.com/file/d/14fg2shLID10Ok2VaJBqVWlAJ1-eLUxuc/view?usp=sharing)
 
 ## Структура
 ### audio
