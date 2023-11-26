@@ -23,9 +23,14 @@ class MyApp extends StatelessWidget {
             child: const Text('Play Audio'),
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+
+          },
+          child: const Icon(Icons.add),
+        )
       ),
     );
-
   }
 
   void _playAudio() async {

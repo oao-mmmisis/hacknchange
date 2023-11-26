@@ -22,7 +22,6 @@ services:
     restart: always
     networks:
       - default
-      - public
     ports:
       - 8000:8000
     volumes:
