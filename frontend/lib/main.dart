@@ -1,5 +1,7 @@
 import "package:flutter/material.dart";
 import "package:just_audio/just_audio.dart";
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -15,27 +17,129 @@ class MyApp extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Audio Streaming'),
         ),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () {
-              _playAudio();
-            },
-            child: const Text('Play Audio'),
-          ),
+        body: FutureBuilder<ListView>(
+          future: getSpaces(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Text("${snapshot.error}");
+            } else if (snapshot.hasData) {
+              return snapshot.data!;
+            } else {
+              return const Text('No data available');
+            }
+          },
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-
+            addSpace();
           },
           child: const Icon(Icons.add),
-        )
+        ),
       ),
     );
   }
 
-  void _playAudio() async {
-    final player = AudioPlayer();
-    await player.setUrl('http://localhost:8000/232');
-    player.play();
+}
+
+Future<void> addSpace() async {
+  final url = Uri.parse('http://localhost/space/add');
+  final headers = {
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  final data = {
+    "name": "string",
+    "private": true,
+    "description": "string",
+  };
+
+  final response = await http.post(
+    url,
+    headers: headers,
+    body: jsonEncode(data),
+  );
+
+  if (response.statusCode == 200) {
+    print('Request successful');
+    print('Response: ${response.body}');
+  } else {
+    print('Request failed with status: ${response.statusCode}');
+    print('Response: ${response.body}');
+  }
+}
+
+Future<ListView> getSpaces() async {
+  final url = Uri.parse('http://localhost/spaces');
+  final headers = {
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  final response = await http.get(
+    url,
+    headers: headers,
+  );
+
+  if (response.statusCode == 200) {
+    print('Request successful');
+    print('Response: ${response.body}');
+  } else {
+    print('Request failed with status: ${response.statusCode}');
+    print('Response: ${response.body}');
+  }
+
+
+  List<dynamic> data = jsonDecode(response.body)['data'];
+
+  return ListView(
+    children: data.map((item) {
+      return ListTile(
+        title: Text(item['name']),
+        subtitle: Text(item['description']),
+        leading: Icon(item['private'] ? Icons.lock : Icons.lock_open),
+        onTap: () {
+          playAudio(item['id']);
+        }
+      );
+    }).toList(),
+  );
+}
+
+void playAudio(int spaceId) async {
+  // wait until the request is done
+  await playRequest(spaceId, "dante");
+  
+  final player = AudioPlayer();
+  await player.setUrl('http://localhost/audio/$spaceId');
+  player.play();
+}
+
+Future<void> playRequest(int spaceId, String song) async {
+  final url = Uri.parse('http://localhost/play');
+  final headers = {
+    'accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  final data = {
+    "space_id": spaceId,
+    "song": song,
+  };
+
+  final response = await http.post(
+    url,
+    headers: headers,
+    body: jsonEncode(data),
+  );
+
+  if (response.statusCode == 200) {
+    print('Request successful');
+    print('Response: ${response.body}');
+  } else {
+    print('Request failed with status: ${response.statusCode}');
+    print('Response: ${response.body}');
   }
 }
